@@ -1160,6 +1160,34 @@ struct fuse_lowlevel_ops {
 	 */
 	void (*readdirplus) (fuse_req_t req, fuse_ino_t ino, size_t size, off_t off,
 			 struct fuse_file_info *fi);
+
+	/**
+	 * Copy a range of data from one file to another
+	 *
+	 * Performs an optimized copy between two file descriptors without the
+	 * additional cost of transferring data through the FUSE kernel module
+	 * to user space (glibc) and then back into the FUSE filesystem again.
+	 *
+	 * If this request is answered with an error code of ENOSYS, this is
+	 * treated as a permanent failure with error code EOPNOTSUPP, i.e. all
+	 * future copy_file_range() requests will fail with EOPNOTSUPP without
+	 * being send to the filesystem process.
+	 *
+	 * Valid replies:
+	 *   fuse_reply_copy_file_range
+	 *   fuse_reply_err
+	 *
+	 * @param req request handle
+	 * @param fd_in file description used for reading the data from
+	 * @param off_in starting point of fd_in from were the data is read
+	 * @param fd_out file description used for writing the data to
+	 * @param off_out starting point of fd_out where the data is written
+	 * @param len maximum size of the data to copy
+	 * @param flags passed along with the copy_file_range() syscall
+	 */
+	void (*copy_file_range) (fuse_req_t req, int fd_in, off_t off_in,
+				 int fd_out, off_t off_out, size_t len,
+				 int flags);
 };
 
 /**
@@ -1404,6 +1432,7 @@ int fuse_reply_lock(fuse_req_t req, const struct flock *lock);
  * @return zero for success, -errno for failure to send reply
  */
 int fuse_reply_bmap(fuse_req_t req, uint64_t idx);
+int fuse_reply_copy_file_range(fuse_req_t req, size_t size);
 
 /* ----------------------------------------------------------- *
  * Filling a buffer in readdir				       *

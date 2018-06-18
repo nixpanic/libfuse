@@ -2342,6 +2342,27 @@ int fuse_fs_fallocate(struct fuse_fs *fs, const char *path, int mode,
 		return -ENOSYS;
 }
 
+ssize_t fuse_fs_copy_file_range(struct fuse_fs *fs, int fd_in,
+				off_t off_in, int fd_out, off_t off_out,
+				size_t len, int flags)
+{
+	fuse_get_context()->private_data = fs->user_data;
+	if (fs->op.copy_file_range) {
+		if (fs->debug)
+			fprintf(stderr, "copy_file_range from %d:%llu to "
+			                "%d:%llu, length: %llu\n",
+				fd_in,
+				(unsigned long long) off_in,
+				fd_out,
+				(unsigned long long) off_out,
+				(unsigned long long) len);
+
+		return fs->op.copy_file_range(fd_in, off_in, fd_out,
+					      off_out, len, flags);
+	} else
+		return -ENOSYS;
+}
+
 static int is_open(struct fuse *f, fuse_ino_t dir, const char *name)
 {
 	struct node *node;
@@ -4269,6 +4290,25 @@ static void fuse_lib_fallocate(fuse_req_t req, fuse_ino_t ino, int mode,
 	reply_err(req, err);
 }
 
+static void fuse_lib_copy_file_range(fuse_req_t req, int fd_in, off_t off_in,
+				     int fd_out, off_t off_out, size_t len,
+				     int flags)
+{
+	struct fuse *f = req_fuse_prepare(req);
+	struct fuse_intr_data d;
+	ssize_t res;
+
+	fuse_prepare_interrupt(f, req, &d);
+	res = fuse_fs_copy_file_range(f->fs, fd_in, off_in, fd_out, off_out,
+				      len, flags);
+	fuse_finish_interrupt(f, req, &d);
+
+	if (res >= 0)
+		fuse_reply_copy_file_range(req, res);
+	else
+		reply_err(req, res);
+}
+
 static int clean_delay(struct fuse *f)
 {
 	/*
@@ -4365,6 +4405,7 @@ static struct fuse_lowlevel_ops fuse_path_ops = {
 	.ioctl = fuse_lib_ioctl,
 	.poll = fuse_lib_poll,
 	.fallocate = fuse_lib_fallocate,
+	.copy_file_range = fuse_lib_copy_file_range,
 };
 
 int fuse_notify_poll(struct fuse_pollhandle *ph)
