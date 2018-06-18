@@ -466,6 +466,16 @@ int fuse_reply_write(fuse_req_t req, size_t count)
 	return send_reply_ok(req, &arg, sizeof(arg));
 }
 
+int fuse_reply_copy_file_range(fuse_req_t req, size_t size)
+{
+	struct fuse_copy_file_range_out arg;
+
+	memset(&arg, 0, sizeof(arg));
+	arg.size = size;
+
+	return send_reply_ok(req, &arg, sizeof(arg));
+}
+
 int fuse_reply_buf(fuse_req_t req, const char *buf, size_t size)
 {
 	return send_reply_ok(req, buf, size);
@@ -1809,6 +1819,27 @@ static void do_fallocate(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 		fuse_reply_err(req, ENOSYS);
 }
 
+static void do_copy_file_range(fuse_req_t req, fuse_ino_t nodeid_in, const void *inarg)
+{
+	struct fuse_copy_file_range_in *arg = (struct fuse_copy_file_range_in *) inarg;
+	struct fuse_file_info fi_in, fi_out;
+
+	memset(&fi_in, 0, sizeof(fi_in));
+	fi_in.fh = arg->fh_in;
+
+	memset(&fi_out, 0, sizeof(fi_out));
+	fi_out.fh = arg->fh_out;
+
+
+	if (req->se->op.copy_file_range)
+		req->se->op.copy_file_range(req, nodeid_in, arg->off_in,
+					    &fi_in, arg->nodeid_out,
+					    arg->off_out, &fi_out, arg->len,
+					    arg->flags);
+	else
+		fuse_reply_err(req, ENOSYS);
+}
+
 static void do_init(fuse_req_t req, fuse_ino_t nodeid, const void *inarg)
 {
 	struct fuse_init_in *arg = (struct fuse_init_in *) inarg;
@@ -2393,6 +2424,7 @@ static struct {
 	[FUSE_BATCH_FORGET] = { do_batch_forget, "BATCH_FORGET" },
 	[FUSE_READDIRPLUS] = { do_readdirplus,	"READDIRPLUS"},
 	[FUSE_RENAME2]     = { do_rename2,      "RENAME2"    },
+	[FUSE_COPY_FILE_RANGE] = { do_copy_file_range, "COPY_FILE_RANGE" },
 	[CUSE_INIT]	   = { cuse_lowlevel_init, "CUSE_INIT"   },
 };
 
