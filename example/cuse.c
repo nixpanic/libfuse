@@ -31,7 +31,7 @@
  */
 
 
-#define FUSE_USE_VERSION 31
+#define FUSE_USE_VERSION 34
 
 #include <cuse_lowlevel.h>
 #include <fuse_opt.h>

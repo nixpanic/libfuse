@@ -18,7 +18,7 @@
  * \include hello_ll.c
  */
 
-#define FUSE_USE_VERSION 31
+#define FUSE_USE_VERSION 34
 
 #include <fuse_lowlevel.h>
 #include <stdio.h>

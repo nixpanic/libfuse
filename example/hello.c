@@ -19,7 +19,7 @@
  */
 
 
-#define FUSE_USE_VERSION 31
+#define FUSE_USE_VERSION 34
 
 #include <fuse.h>
 #include <stdio.h>

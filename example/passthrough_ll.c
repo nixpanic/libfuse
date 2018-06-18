@@ -35,7 +35,7 @@
  */
 
 #define _GNU_SOURCE
-#define FUSE_USE_VERSION 31
+#define FUSE_USE_VERSION 34
 
 #include <fuse_lowlevel.h>
 #include <unistd.h>
