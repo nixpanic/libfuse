@@ -585,6 +585,10 @@ def tst_utimens(mnt_dir, ns_tol=0):
         assert abs(fstat.st_atime_ns - atime_ns) <= ns_tol
         assert abs(fstat.st_mtime_ns - mtime_ns) <= ns_tol
 
+def tst_copy_file_range(mnt_dir):
+    # no os.copy_file_range yet, https://github.com/python/cpython/pull/7255
+    pass
+
 def tst_passthrough(src_dir, mnt_dir):
     name = name_generator()
     src_name = pjoin(src_dir, name)
