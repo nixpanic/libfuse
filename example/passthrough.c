@@ -29,6 +29,8 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
+
 #ifdef linux
 /* For pread()/pwrite()/utimensat() */
 #define _XOPEN_SOURCE 700
@@ -445,6 +447,20 @@ static int xmp_removexattr(const char *path, const char *name)
 }
 #endif /* HAVE_SETXATTR */
 
+#ifdef HAVE_COPY_FILE_RANGE
+static ssize_t xmp_copy_file_range(int fd_in, off_t off_in, int fd_out,
+				   off_t off_out, size_t len, int flags)
+{
+	ssize_t res;
+
+	res = copy_file_range(fd_in, &off_in, fd_out, &off_out, len, flags);
+	if (res == -1)
+		return -errno;
+
+	return res;
+}
+#endif
+
 static struct fuse_operations xmp_oper = {
 	.init           = xmp_init,
 	.getattr	= xmp_getattr,
@@ -479,6 +495,9 @@ static struct fuse_operations xmp_oper = {
 	.getxattr	= xmp_getxattr,
 	.listxattr	= xmp_listxattr,
 	.removexattr	= xmp_removexattr,
+#endif
+#ifdef HAVE_COPY_FILE_RANGE
+	.copy_file_range = xmp_copy_file_range,
 #endif
 };
 
